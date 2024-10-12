@@ -4,15 +4,15 @@ package main
 
 import (
 	"context"
-	//"errors"
 	"io"
 	"log"
-	"os"
 	"sync"
 	"time"
 
-	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2" // fyne
+	//"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/storage"
 )
 
 const PERIOD = time.Duration(500) * time.Millisecond
@@ -20,9 +20,9 @@ const PERIOD = time.Duration(500) * time.Millisecond
 // Log widget
 type LogWidget struct {
 	*widget.Entry
-	*container.Scroll
-	*os.File
+	//*container.Scroll
 	*time.Ticker
+	reader fyne.URIReadCloser
 	mx     sync.Mutex
 	wg     sync.WaitGroup
 	ctx    context.Context
@@ -31,14 +31,14 @@ type LogWidget struct {
 
 // Create new log widgets
 func NewLogWidget(file string) *LogWidget {
-	e := widget.NewEntry()
-	e.TextStyle.Monospace = true
-	//e.MultiLine = true
+	//entry := widget.NewEntry()
+	entry := widget.NewMultiLineEntry()
+	//entry.MultiLine = true
+	entry.TextStyle.Monospace = true
 
 	ctx, cancel := context.WithCancel(context.Background())
 	lw := &LogWidget{
-		Entry:  e,
-		Scroll: container.NewScroll(e),
+		Entry:  entry,
 		Ticker: time.NewTicker(PERIOD),
 		ctx:    ctx,
 		cancel: cancel,
@@ -50,39 +50,40 @@ func NewLogWidget(file string) *LogWidget {
 }
 
 // Open new log file
-func (lw *LogWidget) Open(path string) {
+func (lw *LogWidget) Open(u fyne.URI) {
 	lw.mx.Lock()
 	defer lw.mx.Unlock()
 
-	if lw.File != nil {
+	if lw.reader != nil {
 		// Close old file
-		err := lw.File.Close()
+		err := lw.reader.Close()
 		if err != nil {
-			log.Print("close error:", err)
+			log.Print("close error: ", err)
 		}
-		lw.File = nil
+		lw.reader = nil
 	}
 
 	// Open new file
 	var err error
-	lw.File, err = os.Open(path)
+	lw.reader, err = storage.Reader(u)
 	if err != nil {
-		log.Print("can't open file:", err)
+		lw.reader = nil
+		log.Print("can't open file: ", err)
 		lw.SetText(err.Error())
 		return
 	}
 
 	lw.SetText("")
-	lw.Scroll.ScrollToTop()
+	//lw.Scroll.ScrollToTop()
 	lw.update()
 }
 
 // Update entry from file
 func (lw *LogWidget) update() {
-	data, err := io.ReadAll(lw.File)
+	data, err := io.ReadAll(lw.reader)
 
 	if err != nil {
-		log.Print("read error:", err)
+		log.Print("read error: ", err)
 		return
 	}
 
@@ -94,6 +95,12 @@ func (lw *LogWidget) update() {
 	// Append text
 	text := lw.Text + string(data)
 	lw.SetText(text)
+	
+	//focused := lw.Entry.Canvas().Focused()
+	//// If the user is not focused on the text area then scroll to the end
+	//if focused == nil || focused != lw.Entry {
+  //  lw.Entry.CursorRow = len(lw.Text) - 1 // ets the cursor to the end
+	//}
 }
 
 // Cancel monitor
@@ -104,11 +111,11 @@ func (lw *LogWidget) Cancel() {
 	lw.mx.Lock()
 	defer lw.mx.Unlock()
 
-	if lw.File != nil {
+	if lw.reader != nil {
 		// CLose file
-		err := lw.File.Close()
+		err := lw.reader.Close()
 		if err != nil {
-			log.Print("close error:", err)
+			log.Print("close error: ", err)
 		}
 	}
 
@@ -131,12 +138,9 @@ func (lw *LogWidget) goMonitor() {
 		} // select
 
 		lw.mx.Lock()
-		if lw.File == nil {
-			lw.mx.Unlock()
-			continue
+		if lw.reader != nil {
+			lw.update()
 		}
-
-		lw.update()
 		lw.mx.Unlock()
 	} // for
 }

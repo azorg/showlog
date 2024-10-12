@@ -49,12 +49,12 @@ func main() {
 	label.TextStyle.Bold = true
 	lw := NewLogWidget("")
 
-	if conf.File != "" {
+	if conf.URI != "" {
 		// Open file
-		u := storage.NewFileURI(conf.File)
+		u := storage.NewURI(conf.URI)
 		log.Printf("open: scheme=%s path=%s", u.Scheme(), u.Path())
 		label.SetText(u.Name())
-		lw.Open(u.Path())
+		lw.Open(u)
 	}
 
 	// Create buttons
@@ -80,8 +80,8 @@ func main() {
 			u := uri.URI()
 			log.Printf("open: scheme=%s path=%s", u.Scheme(), u.Path())
 			label.SetText(u.Name())
-			conf.File = u.Path()
-			lw.Open(conf.File)
+			lw.Open(u)
+			conf.URI = u.String()
 		}, w)
 
 		uri := storage.NewFileURI(".")
@@ -105,7 +105,7 @@ func main() {
 		container.NewCenter(label),                              // top
 		container.NewHBox(btnOpen, btnClear, spacer(), btnQuit), // bottom
 		nil, nil, // left, right
-		lw.Scroll, // center
+		lw.Entry, // center
 	)
 
 	// Show window and run

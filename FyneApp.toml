@@ -5,7 +5,7 @@ Website = "https://github.com/azorg/showlog"
   Name = "showlog"
   ID = "com.example.showlog"
   Version = "1.0.0"
-  Build = 1
+  Build = 2
 
 [LinuxAndBSD]
   GenericName = "showlog"
