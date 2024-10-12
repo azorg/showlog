@@ -73,6 +73,10 @@ func main() {
 				log.Print("can't select file:", err)
 				return
 			}
+			if uri == nil {
+				log.Print("can't select file: uri=nil")
+				return
+			}
 			u := uri.URI()
 			log.Printf("open: scheme=%s path=%s", u.Scheme(), u.Path())
 			label.SetText(u.Name())
