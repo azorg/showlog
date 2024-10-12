@@ -78,7 +78,6 @@ func main() {
 			label.SetText(u.Name())
 			conf.File = u.Path()
 			lw.Open(conf.File)
-			lw.TextGrid.SetText("")
 		}, w)
 
 		uri := storage.NewFileURI(".")

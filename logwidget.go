@@ -68,6 +68,29 @@ func (lw *LogWidget) Open(path string) {
 		lw.TextGrid.SetText(err.Error())
 		return
 	}
+			
+	lw.TextGrid.SetText("")
+	lw.Scroll.ScrollToTop()
+	lw.update()
+}
+
+// Update TextGrid from file
+func (lw *LogWidget) update() {
+	data, err := io.ReadAll(lw.File)
+
+	if err != nil {
+		log.Print("read error:", err)
+		return
+	}
+
+	if len(data) == 0 {
+		return
+	}
+	log.Printf("read %d bytes", len(data))
+
+	// Append text
+	text := lw.Text() + string(data)
+	lw.SetText(text)
 }
 
 // Cancel monitor
@@ -96,6 +119,7 @@ func (lw *LogWidget) goMonitor() {
 		case <-lw.ctx.Done():
 			log.Print("cancel")
 			return
+
 		case _, ok := <-lw.Ticker.C:
 			if !ok {
 				log.Print("ticker closed")
@@ -109,24 +133,8 @@ func (lw *LogWidget) goMonitor() {
 			continue
 		}
 
-		data, err := io.ReadAll(lw.File)
+		lw.update()
 		lw.mx.Unlock()
-
-		if err != nil {
-			//if !errors.Is(err, io.EOF) {
-			log.Print("read error:", err)
-			//}
-			continue
-		}
-
-		if len(data) == 0 {
-			continue
-		}
-		log.Printf("read %d bytes", len(data))
-
-		// Append text
-		text := lw.Text() + string(data)
-		lw.SetText(text)
 	} // for
 }
 
