@@ -17,9 +17,9 @@ import (
 
 const PERIOD = time.Duration(500) * time.Millisecond
 
-// Log widget (TextGrid + Scroll)
+// Log widget
 type LogWidget struct {
-	*widget.TextGrid
+	*widget.Entry
 	*container.Scroll
 	*os.File
 	*time.Ticker
@@ -31,14 +31,17 @@ type LogWidget struct {
 
 // Create new log widgets
 func NewLogWidget(file string) *LogWidget {
-	t := widget.NewTextGrid()
+	e := widget.NewEntry()
+	e.TextStyle.Monospace = true
+	//e.MultiLine = true
+
 	ctx, cancel := context.WithCancel(context.Background())
 	lw := &LogWidget{
-		TextGrid: t,
-		Scroll:   container.NewScroll(t),
-		Ticker:   time.NewTicker(PERIOD),
-		ctx:      ctx,
-		cancel:   cancel,
+		Entry:  e,
+		Scroll: container.NewScroll(e),
+		Ticker: time.NewTicker(PERIOD),
+		ctx:    ctx,
+		cancel: cancel,
 	}
 
 	lw.wg.Add(1)
@@ -65,16 +68,16 @@ func (lw *LogWidget) Open(path string) {
 	lw.File, err = os.Open(path)
 	if err != nil {
 		log.Print("can't open file:", err)
-		lw.TextGrid.SetText(err.Error())
+		lw.SetText(err.Error())
 		return
 	}
-			
-	lw.TextGrid.SetText("")
+
+	lw.SetText("")
 	lw.Scroll.ScrollToTop()
 	lw.update()
 }
 
-// Update TextGrid from file
+// Update entry from file
 func (lw *LogWidget) update() {
 	data, err := io.ReadAll(lw.File)
 
@@ -89,7 +92,7 @@ func (lw *LogWidget) update() {
 	log.Printf("read %d bytes", len(data))
 
 	// Append text
-	text := lw.Text() + string(data)
+	text := lw.Text + string(data)
 	lw.SetText(text)
 }
 
