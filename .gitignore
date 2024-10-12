@@ -37,6 +37,7 @@ _test
 #go.sum
 
 showlog
+showlog.json
 showlog.apk
 showlog.tar.xz
 
