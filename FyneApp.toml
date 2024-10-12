@@ -1,0 +1,14 @@
+Website = "https://github.com/azorg/showlog"
+
+[Details]
+  Icon = "Icon.png"
+  Name = "showlog"
+  ID = "com.example.showlog"
+  Version = "1.0.0"
+  Build = 1
+
+[LinuxAndBSD]
+  GenericName = "showlog"
+  Categories = ["stuff"]
+  Comment = "Show log file"
+  Keywords = ["fyne", "example"]
