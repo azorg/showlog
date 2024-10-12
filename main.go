@@ -35,7 +35,7 @@ func main() {
 	w.SetOnClosed(func() {
 		log.Printf("window closed")
 	})
-	
+
 	onExit := func() {
 		// Save configuration
 		size := w.Canvas().Size()
@@ -46,11 +46,21 @@ func main() {
 
 	// Create widgets
 	label := widget.NewLabel("")
+	label.TextStyle.Bold = true
 	lw := NewLogWidget("")
 
+	if conf.File != "" {
+		// Open file
+		u := storage.NewFileURI(conf.File)
+		log.Printf("open: scheme=%s path=%s", u.Scheme(), u.Path())
+		label.SetText(u.Name())
+		lw.Open(u.Path())
+	}
+
+	// Create buttons
 	btnQuit := widget.NewButton("Quit", func() {
 		log.Print("button Quit pressed")
-		a.Quit()
+		//a.Quit()
 		onExit()
 		os.Exit(0)
 	})
@@ -64,10 +74,11 @@ func main() {
 				return
 			}
 			u := uri.URI()
-			log.Printf("scheme=%s path=%s", u.Scheme(), u.Path())
+			log.Printf("open: scheme=%s path=%s", u.Scheme(), u.Path())
 			label.SetText(u.Name())
 			conf.File = u.Path()
 			lw.Open(conf.File)
+			lw.TextGrid.SetText("")
 		}, w)
 
 		uri := storage.NewFileURI(".")
@@ -88,18 +99,11 @@ func main() {
 	// Create containers/spacers/layout
 	spacer := layout.NewSpacer
 	vbox := container.NewBorder(
-		container.NewCenter(label), // top
+		container.NewCenter(label),                              // top
 		container.NewHBox(btnOpen, btnClear, spacer(), btnQuit), // bottom
 		nil, nil, // left, right
 		lw.Scroll, // center
 	)
-
-	if conf.File != "" {
-		// Open file
-		u := storage.NewFileURI(conf.File)
-		label.SetText(u.Name())
-		lw.Open(u.Path())
-	}
 
 	// Show window and run
 	w.SetContent(vbox)

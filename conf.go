@@ -47,6 +47,9 @@ func (c *Conf) Read() {
 	log.Printf("read conf: File='%s' Center=%v Full=%v W=%f H=%f",
 		C.File, C.Center, C.Full, C.W, C.H)
 
+	if C.File != "" {
+		c.File = C.File
+	}
 	if C.Center {
 		c.Center = true
 	}
