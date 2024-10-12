@@ -53,6 +53,7 @@ clean:
 	rm -f $(PRJ)
 	rm -f $(APK)
 	rm -f $(PRJ).tar.xz
+	rm -f $(PRJ).json
 
 distclean: clean
 	rm -f go.mod

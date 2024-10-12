@@ -5,12 +5,13 @@ package main
 import (
 	"log"
 	"os"
-	"time"
 
 	"fyne.io/fyne/v2" // fyne
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -34,21 +35,49 @@ func main() {
 	w.SetOnClosed(func() {
 		log.Printf("window closed")
 	})
+	
+	onExit := func() {
+		// Save configuration
+		size := w.Canvas().Size()
+		conf.W = size.Width
+		conf.H = size.Height
+		conf.Write()
+	}
 
 	// Create widgets
+	label := widget.NewLabel("")
 	lw := NewLogWidget("")
-	
+
 	btnQuit := widget.NewButton("Quit", func() {
 		log.Print("button Quit pressed")
 		a.Quit()
+		onExit()
 		os.Exit(0)
 	})
 
 	btnOpen := widget.NewButton("Open", func() {
 		msg := "button Open pressed"
 		log.Print(msg)
-		text := lw.Text() + time.Now().Format(time.DateTime) + " " + msg + "\n"
-		lw.SetText(text)
+		d := dialog.NewFileOpen(func(uri fyne.URIReadCloser, err error) {
+			if err != nil {
+				log.Print("can't select file:", err)
+				return
+			}
+			u := uri.URI()
+			log.Printf("scheme=%s path=%s", u.Scheme(), u.Path())
+			label.SetText(u.Name())
+			conf.File = u.Path()
+			lw.Open(conf.File)
+		}, w)
+
+		uri := storage.NewFileURI(".")
+		uris, err := storage.ListerForURI(uri)
+		if err != nil {
+			log.Print("can't set start location:", err)
+		} else {
+			d.SetLocation(uris)
+		}
+		d.Show()
 	})
 
 	btnClear := widget.NewButton("Clear", func() {
@@ -59,22 +88,23 @@ func main() {
 	// Create containers/spacers/layout
 	spacer := layout.NewSpacer
 	vbox := container.NewBorder(
-		nil, // top
+		container.NewCenter(label), // top
 		container.NewHBox(btnOpen, btnClear, spacer(), btnQuit), // bottom
 		nil, nil, // left, right
-		lw.TextGrid, // center
+		lw.Scroll, // center
 	)
 
+	if conf.File != "" {
+		// Open file
+		u := storage.NewFileURI(conf.File)
+		label.SetText(u.Name())
+		lw.Open(u.Path())
+	}
 
 	// Show window and run
 	w.SetContent(vbox)
 	w.ShowAndRun()
-
-	// Save configuration
-	size := w.Canvas().Size()
-	conf.W = size.Width
-	conf.H = size.Height
-	conf.Write()
+	onExit()
 }
 
 // EOF: "main.go"

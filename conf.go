@@ -14,6 +14,7 @@ const CONFIG_MODE = 0644
 
 // Configuration scructure
 type Conf struct {
+	File   string  `json:"file,omitempty"`   // log file
 	Center bool    `json:"center,omitempty"` // center on screen
 	Full   bool    `json:"full,omitempty"`   // full screen
 	W      float32 `json:"w,omitempty"`      // width
@@ -43,8 +44,8 @@ func (c *Conf) Read() {
 		log.Print(err)
 		return
 	}
-	log.Printf("read conf: Center=%v Full=%v W=%f H=%f",
-		C.Center, C.Full, C.W, C.H)
+	log.Printf("read conf: File='%s' Center=%v Full=%v W=%f H=%f",
+		C.File, C.Center, C.Full, C.W, C.H)
 
 	if C.Center {
 		c.Center = true
@@ -73,8 +74,8 @@ func (c *Conf) Write() {
 		log.Print(err)
 	}
 
-	log.Printf("write conf: Center=%v Full=%v W=%f H=%f",
-		c.Center, c.Full, c.W, c.H)
+	log.Printf("write conf: File='%s' Center=%v Full=%v W=%f H=%f",
+		c.File, c.Center, c.Full, c.W, c.H)
 }
 
 // EOF: "conf.go"

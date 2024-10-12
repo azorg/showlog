@@ -1,19 +1,133 @@
 // File: "logwidget.go"
 
 package main
-	
+
 import (
+	"context"
+	//"errors"
+	"io"
+	"log"
+	"os"
+	"sync"
+	"time"
+
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
+const PERIOD = time.Duration(500) * time.Millisecond
+
+// Log widget (TextGrid + Scroll)
 type LogWidget struct {
 	*widget.TextGrid
+	*container.Scroll
+	*os.File
+	*time.Ticker
+	mx     sync.Mutex
+	wg     sync.WaitGroup
+	ctx    context.Context
+	cancel func()
 }
 
+// Create new log widgets
 func NewLogWidget(file string) *LogWidget {
-	tg := widget.NewTextGrid()
-	tg.SetText("hello!")
-	return &LogWidget{TextGrid: tg}
+	t := widget.NewTextGrid()
+	ctx, cancel := context.WithCancel(context.Background())
+	lw := &LogWidget{
+		TextGrid: t,
+		Scroll:   container.NewScroll(t),
+		Ticker:   time.NewTicker(PERIOD),
+		ctx:      ctx,
+		cancel:   cancel,
+	}
+
+	lw.wg.Add(1)
+	go lw.goMonitor()
+	return lw
+}
+
+// Open new log file
+func (lw *LogWidget) Open(path string) {
+	lw.mx.Lock()
+	defer lw.mx.Unlock()
+
+	if lw.File != nil {
+		// Close old file
+		err := lw.File.Close()
+		if err != nil {
+			log.Print("close error:", err)
+		}
+		lw.File = nil
+	}
+
+	// Open new file
+	var err error
+	lw.File, err = os.Open(path)
+	if err != nil {
+		log.Print("can't open file:", err)
+		lw.TextGrid.SetText(err.Error())
+		return
+	}
+}
+
+// Cancel monitor
+func (lw *LogWidget) Cancel() {
+	lw.cancel()
+	lw.Ticker.Stop()
+
+	lw.mx.Lock()
+	defer lw.mx.Unlock()
+
+	if lw.File != nil {
+		// CLose file
+		err := lw.File.Close()
+		if err != nil {
+			log.Print("close error:", err)
+		}
+	}
+
+	lw.wg.Wait()
+}
+
+func (lw *LogWidget) goMonitor() {
+	defer lw.wg.Done()
+	for {
+		select {
+		case <-lw.ctx.Done():
+			log.Print("cancel")
+			return
+		case _, ok := <-lw.Ticker.C:
+			if !ok {
+				log.Print("ticker closed")
+				return
+			}
+		} // select
+
+		lw.mx.Lock()
+		if lw.File == nil {
+			lw.mx.Unlock()
+			continue
+		}
+
+		data, err := io.ReadAll(lw.File)
+		lw.mx.Unlock()
+
+		if err != nil {
+			//if !errors.Is(err, io.EOF) {
+			log.Print("read error:", err)
+			//}
+			continue
+		}
+
+		if len(data) == 0 {
+			continue
+		}
+		log.Printf("read %d bytes", len(data))
+
+		// Append text
+		text := lw.Text() + string(data)
+		lw.SetText(text)
+	} // for
 }
 
 // EOF: "logwidget.go"
