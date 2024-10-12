@@ -5,6 +5,8 @@ Build for Linux PC and Android.
 
 ## ATTENTION!
 This code may not work!
+This was my first experience!
+I'm not happy with the result yet!
 
 ## Fyne docs/links
 - https://docs.fyne.io/

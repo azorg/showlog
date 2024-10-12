@@ -128,6 +128,9 @@ prepare-sys: checkroot
 
 prepare:
 	@echo ">>> install Go dependencies to build"
+	go get fyne.io/fyne/v2/cmd/fyne@latest
 	go install fyne.io/fyne/v2/cmd/fyne@latest
+	go get github.com/fyne-io/fyne-cross
+	go install github.com/fyne-io/fyne-cross
 
 # EOF: "Makefile"
