@@ -62,7 +62,7 @@ func main() {
 		nil, // top
 		container.NewHBox(btnOpen, btnClear, spacer(), btnQuit), // bottom
 		nil, nil, // left, right
-		lw, // center
+		lw.TextGrid, // center
 	)
 
 
